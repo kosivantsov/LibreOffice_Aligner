@@ -45,7 +45,7 @@ Most core alignment actions can be performed rapidly using the following default
 | `Ctrl` + `Alt` + `M` | Merge with Cell Below |
 | `Ctrl` + `Alt` + `,` | Move Segment Down |
 | `Ctrl` + `Alt` + `.` | Move Segment Up |
-| `Ctrl` + `Shift` + `-` | Remove Bilateral Rows |
+| `Ctrl` + `Shift` + `-` | Remove Current Row |
 | `Ctrl` + `Alt` + `0` | Reset Formatting |
 
 ### 3. Exporting to TMX
