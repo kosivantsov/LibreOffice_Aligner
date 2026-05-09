@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<oor:component-data xmlns:oor="http://openoffice.org/2001/registry" 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+    oor:name="Accelerators" 
+    oor:package="org.openoffice.Office">
+  <node oor:name="PrimaryKeys">
+    <node oor:name="Modules">
+      <node oor:name="com.sun.star.sheet.SpreadsheetDocument">
+        <node oor:name="S_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.SplitCellAtDelimiter?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="COMMA_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentDown?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="POINT_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentUp?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="SUBTRACT_MOD1_SHIFT" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.RemoveBilateralRows?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="Z_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.ApplyAnchorColor?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="0_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.CleanSheetFormatting?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="A_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.AlignAndAnchorSegments?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+        <node oor:name="M_MOD1_MOD2" oor:op="replace">
+          <prop oor:name="Command">
+            <value xml:lang="en-US">vnd.sun.star.script:Aligner.AlignerMacros.MergeWithCellBelow?language=Basic&amp;location=application</value>
+          </prop>
+        </node>
+      </node>
+    </node>
+  </node>
+</oor:component-data>

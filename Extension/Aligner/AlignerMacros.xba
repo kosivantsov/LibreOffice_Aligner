@@ -1,0 +1,1764 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="AlignerMacros" script:language="StarBasic" script:moduleType="normal">&apos; =========================================================
+&apos; CONFIGURATION &amp; COLOR MANAGEMENT
+&apos; =========================================================
+
+&apos; Configuration: Custom GUI to manage colors (toolbar button)
+Sub ConfigureColors
+    Dim oDialogModel As Object
+    oDialogModel = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialogModel&quot;)
+    oDialogModel.PositionX = 100
+    oDialogModel.PositionY = 100
+    oDialogModel.Width = 150
+    oDialogModel.Height = 120
+    oDialogModel.Title = &quot;Configure Highlight Colors&quot;
+    
+    &apos; Button 1: Anchor Color
+    Dim btnAnchor As Object
+    btnAnchor = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    btnAnchor.PositionX = 10 : btnAnchor.PositionY = 10
+    btnAnchor.Width = 130 : btnAnchor.Height = 15
+    btnAnchor.Label = &quot;Anchor Cell&quot;
+    btnAnchor.Name = &quot;btnAnchor&quot;
+    oDialogModel.insertByName(&quot;btnAnchor&quot;, btnAnchor)
+    
+    &apos; Button 2: Regex Cell Color
+    Dim btnRegexCell As Object
+    btnRegexCell = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    btnRegexCell.PositionX = 10 : btnRegexCell.PositionY = 30
+    btnRegexCell.Width = 130 : btnRegexCell.Height = 15
+    btnRegexCell.Label = &quot;RegEx Highlighted Cell&quot;
+    btnRegexCell.Name = &quot;btnRegexCell&quot;
+    oDialogModel.insertByName(&quot;btnRegexCell&quot;, btnRegexCell)
+    
+    &apos; Button 3: Regex Text Color
+    Dim btnRegexText As Object
+    btnRegexText = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    btnRegexText.PositionX = 10 : btnRegexText.PositionY = 50
+    btnRegexText.Width = 130 : btnRegexText.Height = 15
+    btnRegexText.Label = &quot;RegEx Highlighted Text&quot;
+    btnRegexText.Name = &quot;btnRegexText&quot;
+    oDialogModel.insertByName(&quot;btnRegexText&quot;, btnRegexText)
+    
+    &apos; Button 4: Reset to Defaults
+    Dim btnReset As Object
+    btnReset = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    btnReset.PositionX = 10 : btnReset.PositionY = 75
+    btnReset.Width = 130 : btnReset.Height = 15
+    btnReset.Label = &quot;Reset to Default Colors&quot;
+    btnReset.Name = &quot;btnReset&quot;
+    oDialogModel.insertByName(&quot;btnReset&quot;, btnReset)
+    
+    &apos; Close Button
+    Dim btnClose As Object
+    btnClose = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    btnClose.PositionX = 55 : btnClose.PositionY = 100
+    btnClose.Width = 40 : btnClose.Height = 15
+    btnClose.Label = &quot;Close&quot;
+    btnClose.PushButtonType = com.sun.star.awt.PushButtonType.CANCEL
+    oDialogModel.insertByName(&quot;btnClose&quot;, btnClose)
+    
+    &apos; Create the Dialog
+    Dim oDialog As Object
+    oDialog = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialog&quot;)
+    oDialog.setModel(oDialogModel)
+    
+    Dim oToolkit As Object
+    oToolkit = CreateUnoService(&quot;com.sun.star.awt.Toolkit&quot;)
+    oDialog.createPeer(oToolkit, Null)
+    
+    &apos; Add Event Listener for Buttons
+    Dim oListener As Object
+    oListener = CreateUnoListener(&quot;ConfigDialog_&quot;, &quot;com.sun.star.awt.XActionListener&quot;)
+    
+    oDialog.getControl(&quot;btnAnchor&quot;).addActionListener(oListener)
+    oDialog.getControl(&quot;btnRegexCell&quot;).addActionListener(oListener)
+    oDialog.getControl(&quot;btnRegexText&quot;).addActionListener(oListener)
+    oDialog.getControl(&quot;btnReset&quot;).addActionListener(oListener)
+    
+    &apos; Execute Dialog
+    oDialog.execute()
+    oDialog.dispose()
+End Sub
+
+&apos; Event Handler for the Custom GUI
+Sub ConfigDialog_actionPerformed(oEvent As Object)
+    Dim btnName As String
+    btnName = oEvent.Source.Model.Name
+    
+    Select Case btnName
+        Case &quot;btnAnchor&quot;
+            PickAndSaveColor(&quot;AnchorColor&quot;, RGB(226, 239, 218))
+        Case &quot;btnRegexCell&quot;
+            PickAndSaveColor(&quot;RegexCellColor&quot;, RGB(255, 250, 205))
+        Case &quot;btnRegexText&quot;
+            PickAndSaveColor(&quot;RegexTextColor&quot;, RGB(255, 255, 50))
+        Case &quot;btnReset&quot;
+            Dim fileUrl As String
+            fileUrl = GetConfigFilePath()
+            Dim oSFA As Object
+            oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+            If oSFA.exists(fileUrl) Then oSFA.kill(fileUrl)
+            MsgBox &quot;All colors have been reset to their default values.&quot;, 64, &quot;Reset Complete&quot;
+    End Select
+End Sub
+
+Sub ConfigDialog_disposing(oEvent As Object)
+End Sub
+
+&apos; Helper: Convert Long Color to HEX string (#RRGGBB)
+Function ColorToHex(colorVal As Long) As String
+    Dim hexStr As String
+    hexStr = Hex(colorVal)
+    Do While Len(hexStr) &lt; 6
+        hexStr = &quot;0&quot; &amp; hexStr
+    Loop
+    ColorToHex = &quot;#&quot; &amp; hexStr
+End Function
+
+&apos; Global variable for the clipboard callback
+Global g_ClipboardText As String
+
+&apos; Helper: Launch ColorDialog, copy current to clipboard, and save the result
+Sub PickAndSaveColor(propName As String, defaultColor As Long)
+    Dim oColorPicker As Object
+    Dim currentColor As Long
+    Dim hexCode As String
+    
+    currentColor = GetGlobalColor(propName, defaultColor)
+    hexCode = ColorToHex(currentColor)
+    g_ClipboardText = hexCode
+    
+    Dim oClip As Object, oTR As Object
+    oClip = CreateUnoService(&quot;com.sun.star.datatransfer.clipboard.SystemClipboard&quot;)
+    oTR = CreateUnoListener(&quot;TR_&quot;, &quot;com.sun.star.datatransfer.XTransferable&quot;)
+    oClip.setContents(oTR, Null)
+    
+    oColorPicker = CreateUnoService(&quot;com.sun.star.ui.dialogs.ColorPicker&quot;)
+    
+    Dim aDefaultProp(0) As New com.sun.star.beans.PropertyValue
+    aDefaultProp(0).Name = &quot;Color&quot;
+    aDefaultProp(0).Value = CLng(currentColor)
+    oColorPicker.initialize(aDefaultProp)
+    
+    MsgBox &quot;Current color &quot; &amp; hexCode &amp; &quot; has been copied to your clipboard.&quot; &amp; Chr(10) &amp; Chr(10) &amp; &quot;To see the color, paste the copied value into the Hex field in the Color Picker and press Enter.&quot;, 64, &quot;Color Picker&quot;
+    
+    If oColorPicker.execute() = 1 Then
+        Dim selectedColor As Long
+        selectedColor = oColorPicker.PropertyValues(0).Value
+        SaveGlobalColor(propName, selectedColor)
+        MsgBox &quot;Color successfully updated.&quot;, 64, &quot;Success&quot;
+    End If
+End Sub
+
+&apos; === CLIPBOARD CALLBACK FUNCTIONS ===
+Function TR_getTransferData(aFlavor As com.sun.star.datatransfer.DataFlavor) As Any
+    If (aFlavor.MimeType = &quot;text/plain;charset=utf-16&quot;) Then
+        TR_getTransferData = g_ClipboardText
+    End If
+End Function
+
+Function TR_getTransferDataFlavors() As Any
+    Dim aF As New com.sun.star.datatransfer.DataFlavor
+    aF.MimeType = &quot;text/plain;charset=utf-16&quot;
+    aF.HumanPresentableName = &quot;Unicode-Text&quot;
+    TR_getTransferDataFlavors = Array(aF)
+End Function
+
+Function TR_isDataFlavorSupported(aFlavor As com.sun.star.datatransfer.DataFlavor) As Boolean
+    TR_isDataFlavorSupported = (aFlavor.MimeType = &quot;text/plain;charset=utf-16&quot;)
+End Function
+&apos; ====================================
+
+&apos; Helper: Get the URL to the config file inside LibreOffice&apos;s user config folder
+Function GetConfigFilePath() As String
+    Dim oPathSettings As Object
+    oPathSettings = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;)
+    &apos; Keep it as a URL for SimpleFileAccess
+    GetConfigFilePath = oPathSettings.UserConfig &amp; &quot;/translation_colors.ini&quot;
+End Function
+
+&apos; Helper: Read a color using secure UNO Streams
+Function GetGlobalColor(propName As String, defaultColor As Long) As Long
+    Dim fileUrl As String
+    fileUrl = GetConfigFilePath()
+    Dim oSFA As Object
+    oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    
+    If Not oSFA.exists(fileUrl) Then
+        GetGlobalColor = defaultColor
+        Exit Function
+    End If
+    
+    Dim oInStream As Object, oTextStream As Object
+    oInStream = oSFA.openFileRead(fileUrl)
+    oTextStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+    oTextStream.setInputStream(oInStream)
+    oTextStream.setEncoding(&quot;UTF-8&quot;)
+    
+    Dim found As Boolean
+    found = False
+    Dim lineStr As String
+    
+    Do While Not oTextStream.isEOF()
+        lineStr = oTextStream.readLine()
+        Dim splitPos As Integer
+        splitPos = InStr(lineStr, &quot;=&quot;)
+        If splitPos &gt; 0 Then
+            If Left(lineStr, splitPos - 1) = propName Then
+                GetGlobalColor = CLng(Mid(lineStr, splitPos + 1))
+                found = True
+                Exit Do
+            End If
+        End If
+    Loop
+    
+    oTextStream.closeInput()
+    If Not found Then GetGlobalColor = defaultColor
+End Function
+
+&apos; Helper: Write a color using secure UNO Streams
+Sub SaveGlobalColor(propName As String, colorVal As Long)
+    Dim fileUrl As String
+    fileUrl = GetConfigFilePath()
+    Dim oSFA As Object
+    oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    
+    Dim linesList() As String
+    Dim pCount As Long
+    pCount = 0
+    Dim found As Boolean
+    found = False
+    
+    &apos; Safely read existing configurations
+    If oSFA.exists(fileUrl) Then
+        Dim oInStream As Object, oTextStream As Object
+        oInStream = oSFA.openFileRead(fileUrl)
+        oTextStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+        oTextStream.setInputStream(oInStream)
+        oTextStream.setEncoding(&quot;UTF-8&quot;)
+        
+        Do While Not oTextStream.isEOF()
+            Dim lineStr As String
+            lineStr = oTextStream.readLine()
+            If Trim(lineStr) &lt;&gt; &quot;&quot; Then
+                ReDim Preserve linesList(pCount)
+                Dim splitPos As Integer
+                splitPos = InStr(lineStr, &quot;=&quot;)
+                If splitPos &gt; 0 And Left(lineStr, splitPos - 1) = propName Then
+                    linesList(pCount) = propName &amp; &quot;=&quot; &amp; CStr(colorVal)
+                    found = True
+                Else
+                    linesList(pCount) = lineStr
+                End If
+                pCount = pCount + 1
+            End If
+        Loop
+        oTextStream.closeInput()
+    End If
+    
+    If Not found Then
+        ReDim Preserve linesList(pCount)
+        linesList(pCount) = propName &amp; &quot;=&quot; &amp; CStr(colorVal)
+        pCount = pCount + 1
+    End If
+    
+    &apos; Safely delete the old file to prevent weird overwrite appending issues
+    If oSFA.exists(fileUrl) Then oSFA.kill(fileUrl)
+    
+    &apos; Write the fresh configuration
+    Dim oOutStream As Object, oTextOutStream As Object
+    oOutStream = oSFA.openFileWrite(fileUrl)
+    oTextOutStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+    oTextOutStream.setOutputStream(oOutStream)
+    oTextOutStream.setEncoding(&quot;UTF-8&quot;)
+    
+    Dim i As Long
+    For i = 0 To pCount - 1
+        oTextOutStream.writeString(linesList(i) &amp; Chr(10))
+    Next i
+    
+    oTextOutStream.closeOutput()
+End Sub
+
+&apos; Helper: Read a String setting (like Regex) using secure UNO Streams
+Function GetGlobalString(propName As String, defaultVal As String) As String
+    Dim fileUrl As String
+    fileUrl = GetConfigFilePath()
+    Dim oSFA As Object
+    oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    
+    If Not oSFA.exists(fileUrl) Then
+        GetGlobalString = defaultVal
+        Exit Function
+    End If
+    
+    Dim oInStream As Object, oTextStream As Object
+    oInStream = oSFA.openFileRead(fileUrl)
+    oTextStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+    oTextStream.setInputStream(oInStream)
+    oTextStream.setEncoding(&quot;UTF-8&quot;)
+    
+    Dim found As Boolean
+    found = False
+    Dim lineStr As String
+    
+    Do While Not oTextStream.isEOF()
+        lineStr = oTextStream.readLine()
+        Dim splitPos As Integer
+        splitPos = InStr(lineStr, &quot;=&quot;)
+        &apos; InStr finds the FIRST equals sign, so regexes with &apos;=&apos; in them will load perfectly
+        If splitPos &gt; 0 Then
+            If Left(lineStr, splitPos - 1) = propName Then
+                GetGlobalString = Mid(lineStr, splitPos + 1)
+                found = True
+                Exit Do
+            End If
+        End If
+    Loop
+    
+    oTextStream.closeInput()
+    If Not found Then GetGlobalString = defaultVal
+End Function
+
+&apos; Helper: Write a String setting (like Regex) using secure UNO Streams
+Sub SaveGlobalString(propName As String, strVal As String)
+    Dim fileUrl As String
+    fileUrl = GetConfigFilePath()
+    Dim oSFA As Object
+    oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    
+    Dim linesList() As String
+    Dim pCount As Long
+    pCount = 0
+    Dim found As Boolean
+    found = False
+    
+    If oSFA.exists(fileUrl) Then
+        Dim oInStream As Object, oTextStream As Object
+        oInStream = oSFA.openFileRead(fileUrl)
+        oTextStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+        oTextStream.setInputStream(oInStream)
+        oTextStream.setEncoding(&quot;UTF-8&quot;)
+        
+        Do While Not oTextStream.isEOF()
+            Dim lineStr As String
+            lineStr = oTextStream.readLine()
+            If Trim(lineStr) &lt;&gt; &quot;&quot; Then
+                ReDim Preserve linesList(pCount)
+                Dim splitPos As Integer
+                splitPos = InStr(lineStr, &quot;=&quot;)
+                If splitPos &gt; 0 And Left(lineStr, splitPos - 1) = propName Then
+                    linesList(pCount) = propName &amp; &quot;=&quot; &amp; strVal
+                    found = True
+                Else
+                    linesList(pCount) = lineStr
+                End If
+                pCount = pCount + 1
+            End If
+        Loop
+        oTextStream.closeInput()
+    End If
+    
+    If Not found Then
+        ReDim Preserve linesList(pCount)
+        linesList(pCount) = propName &amp; &quot;=&quot; &amp; strVal
+        pCount = pCount + 1
+    End If
+    
+    If oSFA.exists(fileUrl) Then oSFA.kill(fileUrl)
+    
+    Dim oOutStream As Object, oTextOutStream As Object
+    oOutStream = oSFA.openFileWrite(fileUrl)
+    oTextOutStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+    oTextOutStream.setOutputStream(oOutStream)
+    oTextOutStream.setEncoding(&quot;UTF-8&quot;)
+    
+    Dim i As Long
+    For i = 0 To pCount - 1
+        oTextOutStream.writeString(linesList(i) &amp; Chr(10))
+    Next i
+    
+    oTextOutStream.closeOutput()
+End Sub
+
+&apos; =========================================================
+&apos; ALIGNMENT MACROS
+&apos; =========================================================
+
+&apos; Helper Function to find the next anchored row below a given row
+Function GetNextAnchorRow(oSheet As Object, startRow As Long, col1 As Long, col2 As Long) As Long
+    Dim r As Long
+    Dim oCursor As Object
+    oCursor = oSheet.createCursor()
+    oCursor.gotoEndOfUsedArea(False)
+    Dim lastUsedRow As Long
+    lastUsedRow = oCursor.RangeAddress.EndRow
+    
+    &apos; Fetch the configured anchor color from global settings
+    Dim anchorColor As Long
+    anchorColor = GetGlobalColor(&quot;AnchorColor&quot;, RGB(226, 239, 218))
+    
+    For r = startRow To lastUsedRow
+        If oSheet.getCellByPosition(col1, r).CellBackColor = anchorColor Or _
+           oSheet.getCellByPosition(col2, r).CellBackColor = anchorColor Then
+            GetNextAnchorRow = r
+            Exit Function
+        End If
+    Next r
+    GetNextAnchorRow = lastUsedRow + 1
+End Function
+
+&apos; Merge Current Cell with the Cell Below It (toolbar button)
+Sub MergeWithCellBelow
+    Dim oSheet As Object, oSel As Object
+    oSheet = ThisComponent.CurrentController.ActiveSheet
+    oSel = ThisComponent.CurrentController.getSelection()
+    
+    Dim r As Long, cM As Long, cS As Long
+    r = oSel.RangeAddress.StartRow
+    cM = oSel.RangeAddress.StartColumn
+    If cM = 0 Then cS = 1 Else cS = 0
+    
+    &apos; Combine text
+    Dim txt1 As String, txt2 As String
+    txt1 = Trim(oSheet.getCellByPosition(cM, r).String)
+    txt2 = Trim(oSheet.getCellByPosition(cM, r + 1).String)
+    oSheet.getCellByPosition(cM, r).String = txt1 &amp; &quot; &quot; &amp; txt2
+    
+    &apos; Delete the cell below (Shifts column UP)
+    Dim delRange As Object
+    delRange = oSheet.getCellRangeByPosition(cM, r + 1, cM, r + 1)
+    oSheet.removeRange(delRange.RangeAddress, com.sun.star.sheet.CellDeleteMode.UP)
+    
+    &apos; Fix Anchor: The anchor moved up by 1. Insert a blank cell above it to push it back.
+    Dim nextAnchor As Long
+    nextAnchor = GetNextAnchorRow(oSheet, r + 1, cM, cS)
+    
+    Dim insRange As Object
+    insRange = oSheet.getCellRangeByPosition(cM, nextAnchor - 1, cM, nextAnchor - 1)
+    oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+End Sub
+
+&apos; Split Cell at Delimiter (||) and Shift Down (toolbar button)
+Sub SplitCellAtDelimiter
+    Dim oSheet As Object, oSel As Object
+    oSheet = ThisComponent.CurrentController.ActiveSheet
+    oSel = ThisComponent.CurrentController.getSelection()
+    
+    Dim r As Long, cM As Long, cS As Long
+    r = oSel.RangeAddress.StartRow
+    cM = oSel.RangeAddress.StartColumn
+    If cM = 0 Then cS = 1 Else cS = 0
+    
+    Dim txt As String
+    txt = oSheet.getCellByPosition(cM, r).String
+    
+    Dim pos As Integer
+    pos = InStr(txt, &quot;||&quot;)
+    If pos = 0 Then
+        MsgBox &quot;Please type &apos;||&apos; where you want the split to happen.&quot;, 48, &quot;Delimiter Not Found&quot;
+        Exit Sub
+    End If
+    
+    &apos; Split text
+    Dim part1 As String, part2 As String
+    part1 = Trim(Left(txt, pos - 1))
+    part2 = Trim(Mid(txt, pos + 2))
+    
+    oSheet.getCellByPosition(cM, r).String = part1
+    
+    &apos; Insert blank cell below (Shifts column DOWN)
+    Dim insRange As Object
+    insRange = oSheet.getCellRangeByPosition(cM, r + 1, cM, r + 1)
+    oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+    oSheet.getCellByPosition(cM, r + 1).String = part2
+    
+    &apos; Fix Anchor: The anchor was pushed down. Look for a blank cell to absorb it.
+    Dim nextAnchor As Long
+    nextAnchor = GetNextAnchorRow(oSheet, r + 2, cM, cS)
+    
+    Dim i As Long, absorbed As Boolean
+    absorbed = False
+    For i = nextAnchor - 1 To r + 2 Step -1
+        If Trim(oSheet.getCellByPosition(cM, i).String) = &quot;&quot; Then
+            Dim delRange As Object
+            delRange = oSheet.getCellRangeByPosition(cM, i, cM, i)
+            oSheet.removeRange(delRange.RangeAddress, com.sun.star.sheet.CellDeleteMode.UP)
+            absorbed = True
+            Exit For
+        End If
+    Next i
+    
+    &apos; If no blank cell was found, push the static column down to maintain anchor sync
+    If Not absorbed Then
+        Dim syncRange As Object
+        &apos; The anchor in the moving column is now at nextAnchor, so we push the static column down at nextAnchor - 1
+        syncRange = oSheet.getCellRangeByPosition(cS, nextAnchor - 1, cS, nextAnchor - 1)
+        oSheet.insertCells(syncRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+    End If
+End Sub
+
+&apos; Move Segment Down (toolbar button)
+Sub MoveSegmentDown
+    Dim oDoc As Object, oSheet As Object, oSel As Object
+    oDoc = ThisComponent
+    oSheet = oDoc.CurrentController.ActiveSheet
+    oSel = oDoc.CurrentController.getSelection()
+    
+    Dim r As Long, cM As Long, cS As Long
+    r = oSel.RangeAddress.StartRow
+    cM = oSel.RangeAddress.StartColumn
+    If cM = 0 Then cS = 1 Else cS = 0
+    
+    Dim delRange As Object
+    Dim insRange As Object
+    Dim syncRange As Object
+    Dim nextAnchor As Long
+    Dim newRow As Long
+    
+    &apos; Check if the cell immediately below is empty
+    If Trim(oSheet.getCellByPosition(cM, r + 1).String) = &quot;&quot; Then
+        &apos; Swap segment into the empty space below
+        delRange = oSheet.getCellRangeByPosition(cM, r + 1, cM, r + 1)
+        oSheet.removeRange(delRange.RangeAddress, com.sun.star.sheet.CellDeleteMode.UP)
+        
+        insRange = oSheet.getCellRangeByPosition(cM, r, cM, r)
+        oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell and the moved segment
+        oSheet.getCellByPosition(cM, r).CellBackColor = -1
+        oSheet.getCellByPosition(cM, r + 1).CellBackColor = -1
+        
+        newRow = r + 1
+    Else
+        &apos; Insert blank cell at current position (pushes current column down)
+        insRange = oSheet.getCellRangeByPosition(cM, r, cM, r)
+        oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell
+        oSheet.getCellByPosition(cM, r).CellBackColor = -1
+        
+        &apos; Push the static column down just above the next anchor
+        nextAnchor = GetNextAnchorRow(oSheet, r + 1, cM, cS)
+        
+        syncRange = oSheet.getCellRangeByPosition(cS, nextAnchor - 1, cS, nextAnchor - 1)
+        oSheet.insertCells(syncRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell in the static column
+        oSheet.getCellByPosition(cS, nextAnchor - 1).CellBackColor = -1
+        
+        &apos; Remove background color from the newly moved segment
+        oSheet.getCellByPosition(cM, r + 1).CellBackColor = -1
+        
+        newRow = r + 1
+    End If
+    
+    &apos; Move the selection to follow the segment
+    Dim oTargetCell As Object
+    oTargetCell = oSheet.getCellByPosition(cM, newRow)
+    oDoc.CurrentController.select(oTargetCell)
+End Sub
+
+&apos; Move Segment Up (toolbar button)
+Sub MoveSegmentUp
+    Dim oDoc As Object, oSheet As Object, oSel As Object
+    oDoc = ThisComponent
+    oSheet = oDoc.CurrentController.ActiveSheet
+    oSel = oDoc.CurrentController.getSelection()
+    
+    Dim r As Long, cM As Long, cS As Long
+    r = oSel.RangeAddress.StartRow
+    cM = oSel.RangeAddress.StartColumn
+    If cM = 0 Then cS = 1 Else cS = 0
+    
+    If r = 0 Then Exit Sub &apos; Cannot move up from the first row
+    
+    Dim delRange As Object
+    Dim insRange As Object
+    Dim syncRange As Object
+    Dim nextAnchor As Long
+    Dim newRow As Long
+    
+    &apos; Check if the cell immediately above is empty
+    If Trim(oSheet.getCellByPosition(cM, r - 1).String) = &quot;&quot; Then
+        &apos; Swap segment into the empty space above
+        delRange = oSheet.getCellRangeByPosition(cM, r - 1, cM, r - 1)
+        oSheet.removeRange(delRange.RangeAddress, com.sun.star.sheet.CellDeleteMode.UP)
+        
+        insRange = oSheet.getCellRangeByPosition(cM, r, cM, r)
+        oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell and the moved segment
+        oSheet.getCellByPosition(cM, r).CellBackColor = -1
+        oSheet.getCellByPosition(cM, r - 1).CellBackColor = -1
+        
+        newRow = r - 1
+    Else
+        &apos; To move UP relative to the static column, push the static column DOWN.
+        insRange = oSheet.getCellRangeByPosition(cS, r, cS, r)
+        oSheet.insertCells(insRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell in the static column
+        oSheet.getCellByPosition(cS, r).CellBackColor = -1
+        
+        &apos; Push the moving column down just above the next anchor
+        nextAnchor = GetNextAnchorRow(oSheet, r + 1, cM, cS)
+        
+        syncRange = oSheet.getCellRangeByPosition(cM, nextAnchor - 1, cM, nextAnchor - 1)
+        oSheet.insertCells(syncRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; Clean the newly created empty cell in the moving column
+        oSheet.getCellByPosition(cM, nextAnchor - 1).CellBackColor = -1
+        
+        &apos; Remove background color from the newly moved segment
+        oSheet.getCellByPosition(cM, r).CellBackColor = -1
+        
+        &apos; Since the other column moved down relative to this one, the segment technically stayed on the same row.
+        newRow = r
+    End If
+    
+    &apos; Move the selection to follow the segment
+    Dim oTargetCell As Object
+    oTargetCell = oSheet.getCellByPosition(cM, newRow)
+    oDoc.CurrentController.select(oTargetCell)
+End Sub
+
+&apos; Remove Row Across Both Columns (toolbar button)
+Sub RemoveBilateralRows
+    Dim oSheet As Object, oSel As Object
+    oSheet = ThisComponent.CurrentController.ActiveSheet
+    oSel = ThisComponent.CurrentController.getSelection()
+    
+    Dim r As Long
+    r = oSel.RangeAddress.StartRow
+    
+    &apos; Deleting an entire row affects both columns equally, so anchors naturally stay synchronized.
+    oSheet.Rows.removeByIndex(r, 1)
+End Sub
+
+&apos; Apply Light Green Anchor Color and Move Cursor to End (toolbar button)
+Sub ApplyAnchorColor
+    Dim oDoc As Object
+    Dim oSel As Object
+    Dim oSheet As Object
+    
+    oDoc = ThisComponent
+    oSel = oDoc.CurrentController.getSelection()
+    oSheet = oDoc.CurrentController.ActiveSheet
+    
+    &apos; Get the color from global configuration, or use default light green
+    Dim anchorColor As Long
+    anchorColor = GetGlobalColor(&quot;AnchorColor&quot;, RGB(226, 239, 218))
+    
+    &apos; Apply the color to the cell background
+    oSel.CellBackColor = anchorColor
+    
+    Dim targetRow As Long
+    Dim targetCol As Long
+    Dim r As Long, c As Long
+    Dim oCell As Object
+    Dim oTextCursor As Object
+    
+    &apos; Check if it&apos;s a multiple area selection (Ctrl + Click)
+    If oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+        Dim oRanges As Object
+        oRanges = oSel.createEnumeration()
+        Dim maxRow As Long, maxCol As Long
+        maxRow = -1
+        
+        Do While oRanges.hasMoreElements()
+            Dim oRange As Object
+            oRange = oRanges.nextElement()
+            
+            If oRange.RangeAddress.EndRow &gt; maxRow Then
+                maxRow = oRange.RangeAddress.EndRow
+                maxCol = oRange.RangeAddress.EndColumn
+            End If
+            
+            For r = 0 To oRange.Rows.getCount() - 1
+                For c = 0 To oRange.Columns.getCount() - 1
+                    oCell = oRange.getCellByPosition(c, r)
+                    oTextCursor = oCell.createTextCursor()
+                    oTextCursor.gotoStart(False)
+                    oTextCursor.gotoEnd(True)
+                    oTextCursor.CharBackColor = -1
+                Next c
+            Next r
+        Loop
+        targetRow = maxRow
+        targetCol = maxCol
+        
+    &apos; Check if it&apos;s a standard continuous selection
+    ElseIf oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) Then
+        targetRow = oSel.RangeAddress.EndRow
+        targetCol = oSel.RangeAddress.EndColumn
+        
+        For r = 0 To oSel.Rows.getCount() - 1
+            For c = 0 To oSel.Columns.getCount() - 1
+                oCell = oSel.getCellByPosition(c, r)
+                oTextCursor = oCell.createTextCursor()
+                oTextCursor.gotoStart(False)
+                oTextCursor.gotoEnd(True)
+                oTextCursor.CharBackColor = -1
+            Next c
+        Next r
+    Else
+        Exit Sub
+    End If
+    
+    Dim oTargetCell As Object
+    oTargetCell = oSheet.getCellByPosition(targetCol, targetRow)
+    oDoc.CurrentController.select(oTargetCell)
+End Sub
+
+
+&apos; Clean Sheet Formatting (Context-Aware with Alignment and Text Wrap) (toolbar button)
+Sub CleanSheetFormatting
+    Dim oDoc As Object
+    Dim oSheet As Object
+    Dim oSel As Object
+    Dim oTarget As Object
+    Dim isSingleCell As Boolean
+    
+    oDoc = ThisComponent
+    
+    &apos; Lock controllers to prevent screen flickering and drastically speed up the loop
+    oDoc.lockControllers()
+    
+    On Error GoTo CleanUp &apos; Ensure we unlock the UI if an error occurs
+    
+    oSheet = oDoc.CurrentController.ActiveSheet
+    oSel = oDoc.CurrentController.getSelection()
+    
+    &apos; Determine if the user has actively selected an area
+    If oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+        isSingleCell = False
+    ElseIf oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) Then
+        &apos; Check if the selection is just one single cell
+        If oSel.Columns.Count = 1 And oSel.Rows.Count = 1 Then
+            isSingleCell = True
+        Else
+            isSingleCell = False
+        End If
+    Else
+        isSingleCell = True
+    End If
+    
+    &apos; Set target to selection or the entire used sheet area
+    If isSingleCell Then
+        Dim oCursor As Object
+        oCursor = oSheet.createCursor()
+        oCursor.gotoStartOfUsedArea(False)
+        oCursor.gotoEndOfUsedArea(True)
+        oTarget = oCursor
+    Else
+        oTarget = oSel
+    End If
+    
+    &apos; 1. Remove cell background color (-1 = Transparent / None)
+    oTarget.CellBackColor = -1
+    
+    &apos; 2. Remove character-level text highlighting (Requires looping as ranges don&apos;t support CharBackColor)
+    Dim oCells As Object
+    oCells = oTarget.queryContentCells(23) &apos; 23 = Values, Dates, Strings, Formulas
+    
+    If Not IsNull(oCells) Then
+        Dim oRangesEnum As Object, oRange As Object
+        Dim col As Long, row As Long
+        Dim oCell As Object, oTextCursor As Object
+        
+        oRangesEnum = oCells.createEnumeration()
+        Do While oRangesEnum.hasMoreElements()
+            oRange = oRangesEnum.nextElement()
+            For col = 0 To oRange.Columns.getCount() - 1
+                For row = 0 To oRange.Rows.getCount() - 1
+                    oCell = oRange.getCellByPosition(col, row)
+                    
+                    &apos; Create a text cursor selecting all text in the cell and strip the highlight
+                    oTextCursor = oCell.createTextCursor()
+                    oTextCursor.gotoStart(False)
+                    oTextCursor.gotoEnd(True)
+                    oTextCursor.CharBackColor = -1
+                Next row
+            Next col
+        Loop
+    End If
+    
+    &apos; 3. Remove all borders
+    Dim noBorder As New com.sun.star.table.BorderLine2
+    noBorder.OuterLineWidth = 0
+    noBorder.InnerLineWidth = 0
+    noBorder.LineDistance = 0
+    noBorder.Color = 0
+    
+    Dim oTableBorder As New com.sun.star.table.TableBorder2
+    oTableBorder.IsTopLineValid = True
+    oTableBorder.IsBottomLineValid = True
+    oTableBorder.IsLeftLineValid = True
+    oTableBorder.IsRightLineValid = True
+    oTableBorder.IsHorizontalLineValid = True
+    oTableBorder.IsVerticalLineValid = True
+    
+    oTableBorder.TopLine = noBorder
+    oTableBorder.BottomLine = noBorder
+    oTableBorder.LeftLine = noBorder
+    oTableBorder.RightLine = noBorder
+    oTableBorder.HorizontalLine = noBorder
+    oTableBorder.VerticalLine = noBorder
+    
+    oTarget.TableBorder2 = oTableBorder
+    
+    &apos; 4. Reset font color to Automatic
+    oTarget.CharColor = -1
+    
+    &apos; 5. Set Spellcheck Language to &quot;None&quot; (&quot;zxx&quot; = No linguistic content)
+    Dim aLocale As New com.sun.star.lang.Locale
+    aLocale.Language = &quot;zxx&quot;
+    aLocale.Country = &quot;&quot;
+    aLocale.Variant = &quot;&quot;
+    
+    oTarget.CharLocale = aLocale
+    oTarget.CharLocaleAsian = aLocale
+    oTarget.CharLocaleComplex = aLocale
+    
+    &apos; 6. Force default horizontal/vertical alignment and enable text wrapping
+    oTarget.HoriJustify = com.sun.star.table.CellHoriJustify.STANDARD
+    oTarget.VertJustify = com.sun.star.table.CellVertJustify.STANDARD
+    oTarget.IsTextWrapped = True
+
+CleanUp:
+    &apos; Always unlock controllers so the application becomes responsive again
+    oDoc.unlockControllers()
+End Sub
+
+&apos; Dialog to Set and Save Custom Regex (Saved to Global Config) (toolbar button)
+Sub SetCustomRegex
+    Dim currentRegex As String
+    Dim newRegex As String
+    
+    &apos; Pull regex from global config, defaulting to \d+
+    currentRegex = GetGlobalString(&quot;HighlightRegex&quot;, &quot;\d+&quot;)
+    
+    &apos; Ask user for new regex
+    newRegex = InputBox(&quot;Enter the regular expression for highlighting:&quot;, &quot;Regex Settings&quot;, currentRegex)
+    
+    &apos; Save the new regex silently to global config
+    If newRegex &lt;&gt; &quot;&quot; Then
+        SaveGlobalString(&quot;HighlightRegex&quot;, newRegex)
+    End If
+End Sub
+
+&apos; Highlight Partial Text Matching the Regex inside Cells (Buffered Approach) (toolbar button)
+Sub HighlightRegexMatches
+    Dim oDoc As Object
+    Dim oSel As Object
+    Dim oWorkingRange As Object
+    Dim sRegex As String
+    Dim isSingleCell As Boolean
+    
+    &apos; Fetch configured colors dynamically
+    Dim regexCellColor As Long
+    Dim regexTextColor As Long
+    regexCellColor = GetGlobalColor(&quot;RegexCellColor&quot;, RGB(255, 250, 205))
+    regexTextColor = GetGlobalColor(&quot;RegexTextColor&quot;, RGB(255, 255, 50))
+    
+    oDoc = ThisComponent
+    oSel = oDoc.CurrentController.getSelection()
+    
+    &apos; 1. Check if there is an active selection
+    If oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+        isSingleCell = False
+    ElseIf oSel.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) Then
+        If oSel.Columns.Count = 1 And oSel.Rows.Count = 1 Then
+            isSingleCell = True
+        Else
+            isSingleCell = False
+        End If
+    Else
+        isSingleCell = True
+    End If
+    
+    &apos; 2. Determine target area
+    If isSingleCell Then
+        oWorkingRange = oDoc.CurrentController.ActiveSheet.getCellRangeByName(&quot;A:B&quot;)
+    Else
+        oWorkingRange = oSel
+    End If
+    
+    &apos; Retrieve the Regex from global config
+    sRegex = GetGlobalString(&quot;HighlightRegex&quot;, &quot;\d+&quot;)
+    
+    &apos; Filter selection to populated cells (Strings &amp; Values)
+    Dim oCells As Object
+    On Error Resume Next
+    oCells = oWorkingRange.queryContentCells(23)
+    On Error GoTo 0
+    
+    If IsNull(oCells) Or IsEmpty(oCells) Then
+        MsgBox &quot;No text found in the target area to highlight.&quot;, 48, &quot;Notice&quot;
+        Exit Sub
+    End If
+    
+    &apos; Initialize the LibreOffice Regex Text Search service
+    Dim oTextSearch As Object
+    Dim aSrcOpt As New com.sun.star.util.SearchOptions
+    Dim aLocale As New com.sun.star.lang.Locale
+    
+    oTextSearch = CreateUnoService(&quot;com.sun.star.util.TextSearch&quot;)
+    aSrcOpt.algorithmType = com.sun.star.util.SearchAlgorithms.REGEXP
+    aSrcOpt.searchString = sRegex
+    aSrcOpt.Locale = aLocale
+    oTextSearch.setOptions(aSrcOpt)
+    
+    Dim oRangesEnum As Object, oRange As Object
+    Dim col As Long, row As Long
+    Dim oCell As Object
+    Dim sText As String
+    Dim nStart As Long
+    Dim matchStart As Long, matchEnd As Long
+    Dim selectionLength As Long
+    Dim matchCount As Long
+    Dim oRes As Object
+    Dim oTextCursor As Object
+    
+    &apos; Buffers to hold matches for the current cell before applying formatting
+    Dim matchStarts(500) As Long
+    Dim matchEnds(500) As Long
+    Dim matchIndex As Integer
+    Dim totalMatchedChars As Long
+    Dim i As Integer
+    
+    matchCount = 0
+    oRangesEnum = oCells.createEnumeration()
+    
+    &apos; Lock UI to prevent screen flickering and speed up process
+    oDoc.lockControllers()
+    On Error GoTo CleanUp
+    
+    Do While oRangesEnum.hasMoreElements()
+        oRange = oRangesEnum.nextElement()
+        
+        For col = 0 To oRange.Columns.getCount() - 1
+            For row = 0 To oRange.Rows.getCount() - 1
+                oCell = oRange.getCellByPosition(col, row)
+                sText = oCell.getString()
+                
+                If sText &lt;&gt; &quot;&quot; Then
+                    nStart = 0
+                    totalMatchedChars = 0
+                    matchIndex = 0
+                    
+                    &apos; Step 1: Scan the cell and buffer all matches
+                    Do While nStart &lt; Len(sText)
+                        oRes = oTextSearch.searchForward(sText, nStart, Len(sText))
+                        
+                        If oRes.subRegExpressions &gt; 0 Then
+                            matchStart = oRes.startOffset(0)
+                            matchEnd = oRes.endOffset(0)
+                            
+                            selectionLength = matchEnd - matchStart
+                            
+                            If selectionLength &gt; 0 And matchEnd &gt; nStart Then
+                                &apos; Save match coordinates to array buffer
+                                If matchIndex &lt;= 500 Then
+                                    matchStarts(matchIndex) = matchStart
+                                    matchEnds(matchIndex) = matchEnd
+                                    matchIndex = matchIndex + 1
+                                End If
+                                
+                                totalMatchedChars = totalMatchedChars + selectionLength
+                                nStart = matchEnd
+                            Else
+                                nStart = nStart + 1
+                            End If
+                        Else
+                            Exit Do &apos; No more matches
+                        End If
+                    Loop
+                    
+                    &apos; Step 2: Apply formatting based on the total buffered coverage using GLOBAL COLORS
+                    If matchIndex &gt; 0 Then
+                        &apos; If multiple parts equal the whole text, or a single part equals the whole text
+                        If totalMatchedChars = Len(sText) Then
+                            oCell.CellBackColor = regexCellColor &apos; Configured Cell background
+                        Else
+                            &apos; Apply character highlighting for partial matches
+                            For i = 0 To matchIndex - 1
+                                oTextCursor = oCell.createTextCursor()
+                                oTextCursor.gotoStart(False)
+                                
+                                If matchStarts(i) &gt; 0 Then
+                                    oTextCursor.goRight(matchStarts(i), False)
+                                End If
+                                
+                                oTextCursor.goRight(matchEnds(i) - matchStarts(i), True)
+                                oTextCursor.CharBackColor = regexTextColor &apos; Configured Text background
+                                oCell.CellBackColor = regexCellColor &apos; Configured Cell background
+                            Next i
+                        End If
+                        
+                        matchCount = matchCount + matchIndex
+                    End If
+                    
+                End If
+            Next row
+        Next col
+    Loop
+
+CleanUp:
+    oDoc.unlockControllers()
+    
+    If Not isSingleCell Then
+        oDoc.CurrentController.select(oSel)
+    End If
+    
+    If matchCount = 0 Then
+        MsgBox &quot;No matches found for: &quot; &amp; sRegex, 48, &quot;Notice&quot;
+    End If
+End Sub
+
+&apos; Align and anchor segments (toolbar button)
+Sub AlignAndAnchorSegments
+    Dim oDoc As Object
+    Dim oSheet As Object
+    Dim oSelection As Object
+    
+    oDoc = ThisComponent
+    oSheet = oDoc.CurrentController.ActiveSheet
+    oSelection = oDoc.CurrentController.getSelection()
+    
+    &apos; Fetch the configured anchor color from global settings
+    Dim anchorColor As Long
+    anchorColor = GetGlobalColor(&quot;AnchorColor&quot;, RGB(226, 239, 218))
+    
+    Dim cell1 As Object
+    Dim cell2 As Object
+    Dim tc As Object &apos; Text cursor for cleaning formatting
+    
+    &apos; Handle cases where LibreOffice groups adjacent cells on the same row into a single selection
+    If oSelection.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) And Not oSelection.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+        If oSelection.Columns.Count = 2 And oSelection.Rows.Count = 1 Then
+            cell1 = oSelection.getCellByPosition(0, 0)
+            cell2 = oSelection.getCellByPosition(1, 0)
+        Else
+            MsgBox &quot;Please select exactly two cells.&quot;, 48, &quot;Invalid Selection&quot;
+            Exit Sub
+        End If
+        
+    &apos; Handle multiple dispersed selections (Cmd/Ctrl + Click on different rows)
+    ElseIf oSelection.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+        Dim oRanges As Object
+        oRanges = oSelection.createEnumeration()
+        Dim selCount As Integer
+        selCount = 0
+        
+        Do While oRanges.hasMoreElements()
+            Dim oRange As Object
+            oRange = oRanges.nextElement()
+            &apos; A single cell click is a range of 1x1
+            If oRange.Columns.Count = 1 And oRange.Rows.Count = 1 Then
+                selCount = selCount + 1
+                If selCount = 1 Then cell1 = oRange
+                If selCount = 2 Then cell2 = oRange
+            End If
+        Loop
+        
+        If selCount &lt;&gt; 2 Then
+            MsgBox &quot;Please select exactly two individual cells.&quot;, 48, &quot;Invalid Selection&quot;
+            Exit Sub
+        End If
+        
+    Else
+        MsgBox &quot;Please select exactly two cells.&quot;, 48, &quot;Invalid Selection&quot;
+        Exit Sub
+    End If
+    
+    Dim r1 As Long, c1 As Long
+    Dim r2 As Long, c2 As Long
+    
+    r1 = cell1.CellAddress.Row
+    c1 = cell1.CellAddress.Column
+    r2 = cell2.CellAddress.Row
+    c2 = cell2.CellAddress.Column
+    
+    If c1 = c2 Then
+        MsgBox &quot;Please select cells in two different columns.&quot;, 48, &quot;Invalid Selection&quot;
+        Exit Sub
+    End If
+    
+    &apos; Identify the target row (lower row)
+    Dim targetRow As Long
+    Dim cellToMove As Object
+    Dim staticCell As Object
+    Dim colM As Long, colS As Long
+    
+    If r1 &gt; r2 Then
+        targetRow = r1
+        Set cellToMove = cell2
+        Set staticCell = cell1
+        colM = c2
+        colS = c1
+    ElseIf r2 &gt; r1 Then
+        targetRow = r2
+        Set cellToMove = cell1
+        Set staticCell = cell2
+        colM = c1
+        colS = c2
+    Else
+        &apos; Already on the same row, just apply the configured anchor color
+        cell1.CellBackColor = anchorColor
+        cell2.CellBackColor = anchorColor
+        
+        &apos; Strip text formatting (yellow regex highlights)
+        tc = cell1.createTextCursor()
+        tc.gotoStart(False)
+        tc.gotoEnd(True)
+        tc.CharBackColor = -1
+        
+        tc = cell2.createTextCursor()
+        tc.gotoStart(False)
+        tc.gotoEnd(True)
+        tc.CharBackColor = -1
+        
+        Exit Sub
+    End If
+    
+    Dim shiftAmt As Long
+    shiftAmt = targetRow - cellToMove.CellAddress.Row
+    
+    &apos; Find the last used row to establish boundaries
+    Dim oCursor As Object
+    oCursor = oSheet.createCursor()
+    oCursor.gotoEndOfUsedArea(False)
+    Dim lastUsedRow As Long
+    lastUsedRow = oCursor.RangeAddress.EndRow
+    
+    &apos; Find next anchor
+    Dim nextAnchorRow As Long
+    nextAnchorRow = lastUsedRow + 1
+    
+    Dim r As Long
+    Dim checkColor1 As Long, checkColor2 As Long
+    
+    For r = targetRow + 1 To lastUsedRow
+        checkColor1 = oSheet.getCellByPosition(colM, r).CellBackColor
+        checkColor2 = oSheet.getCellByPosition(colS, r).CellBackColor
+        
+        If checkColor1 = anchorColor Or checkColor2 = anchorColor Then
+            nextAnchorRow = r
+            Exit For
+        End If
+    Next r
+    
+    &apos; 1. Shift the upper cell down by inserting empty cells
+    Dim insertRange As Object
+    insertRange = oSheet.getCellRangeByPosition(colM, cellToMove.CellAddress.Row, colM, cellToMove.CellAddress.Row + shiftAmt - 1)
+    oSheet.insertCells(insertRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+    
+    &apos; CLEAN BACKGROUND: Remove any background the newly inserted cells inherited
+    oSheet.getCellRangeByPosition(colM, cellToMove.CellAddress.Row, colM, cellToMove.CellAddress.Row + shiftAmt - 1).CellBackColor = -1
+    
+    &apos; 2. Delete blank cells above the next anchor
+    Dim blanksDeleted As Long
+    blanksDeleted = 0
+    Dim searchStart As Long, searchEnd As Long
+    searchStart = nextAnchorRow + shiftAmt - 1
+    searchEnd = targetRow + 1
+    
+    Dim cellText As String
+    For r = searchStart To searchEnd Step -1
+        cellText = Trim(oSheet.getCellByPosition(colM, r).String)
+        If cellText = &quot;&quot; Then
+            Dim deleteRange As Object
+            deleteRange = oSheet.getCellRangeByPosition(colM, r, colM, r)
+            oSheet.removeRange(deleteRange.RangeAddress, com.sun.star.sheet.CellDeleteMode.UP)
+            blanksDeleted = blanksDeleted + 1
+            If blanksDeleted = shiftAmt Then Exit For
+        End If
+    Next r
+    
+    &apos; 3. If there weren&apos;t enough empty cells to absorb the shift, push the static column down
+    Dim remainingShift As Long
+    remainingShift = shiftAmt - blanksDeleted
+    If remainingShift &gt; 0 And nextAnchorRow &lt;= lastUsedRow Then
+        Dim staticInsertRange As Object
+        staticInsertRange = oSheet.getCellRangeByPosition(colS, nextAnchorRow, colS, nextAnchorRow + remainingShift - 1)
+        oSheet.insertCells(staticInsertRange.RangeAddress, com.sun.star.sheet.CellInsertMode.DOWN)
+        
+        &apos; CLEAN BACKGROUND: Remove inherited background for static column shift
+        oSheet.getCellRangeByPosition(colS, nextAnchorRow, colS, nextAnchorRow + remainingShift - 1).CellBackColor = -1
+    End If
+    
+    &apos; Mark the newly aligned cells with the configured anchor color
+    Dim cellM As Object, cellS As Object
+    cellM = oSheet.getCellByPosition(colM, targetRow)
+    cellS = oSheet.getCellByPosition(colS, targetRow)
+    
+    cellM.CellBackColor = anchorColor
+    cellS.CellBackColor = anchorColor
+    
+    &apos; Strip text formatting (yellow regex highlights) from the newly anchored cells
+    tc = cellM.createTextCursor()
+    tc.gotoStart(False)
+    tc.gotoEnd(True)
+    tc.CharBackColor = -1
+    
+    tc = cellS.createTextCursor()
+    tc.gotoStart(False)
+    tc.gotoEnd(True)
+    tc.CharBackColor = -1
+    
+End Sub
+
+&apos; =========================================================
+&apos; TMX EXPORT
+&apos; =========================================================
+&apos; Export (toolbar button)
+Sub ExportToTMX
+    Dim oDoc As Object
+    Dim oSheet As Object
+    Dim oCursor As Object
+    
+    oDoc = ThisComponent
+    oSheet = oDoc.CurrentController.ActiveSheet
+    
+    &apos; Find the last used row and column
+    oCursor = oSheet.createCursor()
+    oCursor.gotoEndOfUsedArea(False)
+    
+    Dim lastCol As Long
+    Dim lastRow As Long
+    lastCol = oCursor.RangeAddress.EndColumn
+    lastRow = oCursor.RangeAddress.EndRow
+    
+    If lastRow &lt; 1 Then
+        MsgBox &quot;The spreadsheet does not contain enough data (requires at least 1 header row and 1 data row).&quot;, 48, &quot;Export Error&quot;
+        Exit Sub
+    End If
+    
+    &apos; Extract language codes from the first row (Row 0)
+    Dim langCodes() As String
+    ReDim langCodes(lastCol)
+    Dim c As Long, i As Long
+    Dim langCount As Integer
+    langCount = 0
+    
+    For c = 0 To lastCol
+        langCodes(c) = Trim(oSheet.getCellByPosition(c, 0).String)
+        If langCodes(c) &lt;&gt; &quot;&quot; Then
+            langCount = langCount + 1
+        End If
+    Next c
+    
+    &apos; VALIDATION 1: Ensure there are at least two language codes
+    If langCount &lt; 2 Then
+        MsgBox &quot;CANNOT EXPORT:&quot; &amp; Chr(10) &amp; _
+               &quot;You must have at least two language codes defined in the first row.&quot;, 48, &quot;Export Error&quot;
+        oDoc.CurrentController.select(oSheet.getCellByPosition(0, 0))
+        Exit Sub
+    End If
+    
+    &apos; VALIDATION 2: Ensure all language codes are different
+    Dim isDuplicate As Boolean
+    isDuplicate = False
+    For c = 0 To lastCol
+        If langCodes(c) &lt;&gt; &quot;&quot; Then
+            For i = c + 1 To lastCol
+                If langCodes(c) = langCodes(i) Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next i
+        End If
+        If isDuplicate Then Exit For
+    Next c
+    
+    If isDuplicate Then
+        MsgBox &quot;CANNOT EXPORT:&quot; &amp; Chr(10) &amp; _
+               &quot;Duplicate language codes detected in the first row.&quot; &amp; Chr(10) &amp; _
+               &quot;Language codes must be unique.&quot;, 48, &quot;Export Error&quot;
+        oDoc.CurrentController.select(oSheet.getCellByPosition(0, 0))
+        Exit Sub
+    End If
+    
+    &apos; ASK USER FOR SEGMENTATION TYPE USING CUSTOM GUI
+    Dim segType As String
+    segType = GetSegmentationTypeFromUser()
+    
+    If segType = &quot;&quot; Then Exit Sub &apos; User clicked Cancel or closed the dialog
+    
+    &apos; Prompt user for save location (Explicitly as a SAVE AS dialog)
+    Dim oFilePicker As Object
+    oFilePicker = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+    
+    &apos; Force the dialog into &quot;Save As&quot; mode
+    oFilePicker.initialize(Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION))
+    
+    oFilePicker.appendFilter(&quot;TMX Translation Memory (*.tmx)&quot;, &quot;*.tmx&quot;)
+    oFilePicker.setDefaultName(&quot;export.tmx&quot;)
+    
+    If oFilePicker.execute() &lt;&gt; 1 Then
+        Exit Sub &apos; User canceled
+    End If
+    
+    Dim filePaths() As String
+    filePaths = oFilePicker.getFiles()
+    Dim fileUrl As String
+    fileUrl = filePaths(0)
+    
+    &apos; Enforce .tmx extension if not present
+    If LCase(Right(fileUrl, 4)) &lt;&gt; &quot;.tmx&quot; Then
+        fileUrl = fileUrl &amp; &quot;.tmx&quot;
+    End If
+    
+    &apos; Setup UTF-8 File Stream
+    Dim oSFA As Object
+    Dim oOutStream As Object
+    Dim oTextStream As Object
+    
+    oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+    If oSFA.exists(fileUrl) Then oSFA.kill(fileUrl) &apos; Overwrite existing if user confirmed replace
+    
+    oOutStream = oSFA.openFileWrite(fileUrl)
+    oTextStream = CreateUnoService(&quot;com.sun.star.io.TextOutputStream&quot;)
+    oTextStream.setOutputStream(oOutStream)
+    oTextStream.setEncoding(&quot;UTF-8&quot;)
+    
+    &apos; Write TMX Header, dynamically injecting the user&apos;s chosen segType
+    oTextStream.writeString(&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;UTF-8&quot;&quot;?&gt;&quot; &amp; Chr(10))
+    oTextStream.writeString(&quot;&lt;!DOCTYPE tmx SYSTEM &quot;&quot;tmx14.dtd&quot;&quot;&gt;&quot; &amp; Chr(10))
+    oTextStream.writeString(&quot;&lt;tmx version=&quot;&quot;1.4&quot;&quot;&gt;&quot; &amp; Chr(10))
+    oTextStream.writeString(&quot;  &lt;header creationtool=&quot;&quot;LibreOfficeMacro&quot;&quot; creationtoolversion=&quot;&quot;1.0&quot;&quot; segtype=&quot;&quot;&quot; &amp; segType &amp; &quot;&quot;&quot; o-tmf=&quot;&quot;unknown&quot;&quot; adminlang=&quot;&quot;en-US&quot;&quot; srclang=&quot;&quot;*all*&quot;&quot;/&gt;&quot; &amp; Chr(10))
+    oTextStream.writeString(&quot;  &lt;body&gt;&quot; &amp; Chr(10))
+    
+    &apos; Write Translation Units (starting from row 1)
+    Dim r As Long
+    Dim cellText As String
+    Dim hasData As Boolean
+    
+    For r = 1 To lastRow
+        hasData = False
+        
+        &apos; First, check if the row has any data at all to avoid empty TUs
+        For c = 0 To lastCol
+            If Trim(oSheet.getCellByPosition(c, r).String) &lt;&gt; &quot;&quot; Then
+                hasData = True
+                Exit For
+            End If
+        Next c
+        
+        If hasData Then
+            oTextStream.writeString(&quot;    &lt;tu&gt;&quot; &amp; Chr(10))
+            For c = 0 To lastCol
+                If langCodes(c) &lt;&gt; &quot;&quot; Then
+                    cellText = Trim(oSheet.getCellByPosition(c, r).String)
+                    If cellText &lt;&gt; &quot;&quot; Then
+                        oTextStream.writeString(&quot;      &lt;tuv xml:lang=&quot;&quot;&quot; &amp; EscapeXML(langCodes(c)) &amp; &quot;&quot;&quot;&gt;&quot; &amp; Chr(10))
+                        oTextStream.writeString(&quot;        &lt;seg&gt;&quot; &amp; EscapeXML(cellText) &amp; &quot;&lt;/seg&gt;&quot; &amp; Chr(10))
+                        oTextStream.writeString(&quot;      &lt;/tuv&gt;&quot; &amp; Chr(10))
+                    End If
+                End If
+            Next c
+            oTextStream.writeString(&quot;    &lt;/tu&gt;&quot; &amp; Chr(10))
+        End If
+    Next r
+    
+    &apos; Write TMX Footer
+    oTextStream.writeString(&quot;  &lt;/body&gt;&quot; &amp; Chr(10))
+    oTextStream.writeString(&quot;&lt;/tmx&gt;&quot;)
+    
+    &apos; Close Streams
+    oTextStream.closeOutput()
+    oOutStream.closeOutput()
+    
+    MsgBox &quot;TMX file saved successfully!&quot;, 64, &quot;Export Complete&quot;
+End Sub
+
+&apos; Helper function: Custom GUI Dialog for TMX Segmentation Type
+Function GetSegmentationTypeFromUser() As String
+    Dim oDialogModel As Object
+    oDialogModel = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialogModel&quot;)
+    oDialogModel.PositionX = 100
+    oDialogModel.PositionY = 100
+    oDialogModel.Width = 170
+    oDialogModel.Height = 80
+    oDialogModel.Title = &quot;TMX Segmentation&quot;
+    
+    &apos; Description Label
+    Dim oLabelModel As Object
+    oLabelModel = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlFixedTextModel&quot;)
+    oLabelModel.PositionX = 10 : oLabelModel.PositionY = 10
+    oLabelModel.Width = 150 : oLabelModel.Height = 15
+    oLabelModel.Label = &quot;Select the segtype value for the exported TMX:&quot;
+    oDialogModel.insertByName(&quot;lblDescription&quot;, oLabelModel)
+    
+    &apos; Radio Button 1 (Sentence - Default)
+    Dim oOptSentence As Object
+    oOptSentence = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlRadioButtonModel&quot;)
+    oOptSentence.PositionX = 15 : oOptSentence.PositionY = 25
+    oOptSentence.Width = 140 : oOptSentence.Height = 15
+    oOptSentence.Label = &quot;Sentence&quot;
+    oOptSentence.State = 1 &apos; Set as Default/Checked
+    oOptSentence.Name = &quot;optSentence&quot;
+    oDialogModel.insertByName(&quot;optSentence&quot;, oOptSentence)
+    
+    &apos; Radio Button 2 (Paragraph)
+    Dim oOptParagraph As Object
+    oOptParagraph = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlRadioButtonModel&quot;)
+    oOptParagraph.PositionX = 15 : oOptParagraph.PositionY = 40
+    oOptParagraph.Width = 140 : oOptParagraph.Height = 15
+    oOptParagraph.Label = &quot;Paragraph&quot;
+    oOptParagraph.State = 0 &apos; Unchecked
+    oOptParagraph.Name = &quot;optParagraph&quot;
+    oDialogModel.insertByName(&quot;optParagraph&quot;, oOptParagraph)
+    
+    &apos; OK Button
+    Dim oButtonOk As Object
+    oButtonOk = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    oButtonOk.PositionX = 40 : oButtonOk.PositionY = 60
+    oButtonOk.Width = 40 : oButtonOk.Height = 15
+    oButtonOk.Label = &quot;OK&quot;
+    oButtonOk.PushButtonType = com.sun.star.awt.PushButtonType.OK
+    oDialogModel.insertByName(&quot;btnOk&quot;, oButtonOk)
+    
+    &apos; Cancel Button
+    Dim oButtonCancel As Object
+    oButtonCancel = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    oButtonCancel.PositionX = 90 : oButtonCancel.PositionY = 60
+    oButtonCancel.Width = 40 : oButtonCancel.Height = 15
+    oButtonCancel.Label = &quot;Cancel&quot;
+    oButtonCancel.PushButtonType = com.sun.star.awt.PushButtonType.CANCEL
+    oDialogModel.insertByName(&quot;btnCancel&quot;, oButtonCancel)
+    
+    &apos; Render Dialog
+    Dim oDialog As Object
+    oDialog = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialog&quot;)
+    oDialog.setModel(oDialogModel)
+    
+    Dim oToolkit As Object
+    oToolkit = CreateUnoService(&quot;com.sun.star.awt.Toolkit&quot;)
+    oDialog.createPeer(oToolkit, Null)
+    
+    GetSegmentationTypeFromUser = &quot;&quot;
+    
+    &apos; Read user selection
+    If oDialog.execute() = 1 Then
+        Dim oControl As Object
+        oControl = oDialog.getControl(&quot;optSentence&quot;)
+        &apos; If the Sentence radio button is active (state = True/1)
+        If oControl.getState() Then
+            GetSegmentationTypeFromUser = &quot;sentence&quot;
+        Else
+            GetSegmentationTypeFromUser = &quot;paragraph&quot;
+        End If
+    End If
+    
+    oDialog.dispose()
+End Function
+
+&apos; Helper function to escape special XML characters
+Function EscapeXML(ByVal txt As String) As String
+    txt = Replace(txt, &quot;&amp;&quot;, &quot;&amp;amp;&quot;)
+    txt = Replace(txt, &quot;&lt;&quot;, &quot;&amp;lt;&quot;)
+    txt = Replace(txt, &quot;&gt;&quot;, &quot;&amp;gt;&quot;)
+    txt = Replace(txt, &quot;&quot;&quot;&quot;, &quot;&amp;quot;&quot;)
+    txt = Replace(txt, &quot;&apos;&quot;, &quot;&amp;apos;&quot;)
+    EscapeXML = txt
+End Function
+
+&apos; =========================================================
+&apos; SOURCE &amp; TARGET TEXT IMPORT
+&apos; =========================================================
+&apos; Import Macros (toolbar buttons)
+Sub ImportLeft
+    ImportColumnData(0) &apos; 0 = Column A
+End Sub
+
+Sub ImportRight
+    ImportColumnData(1) &apos; 1 = Column B
+End Sub
+
+&apos; --- Core Import Engine ---
+Sub ImportColumnData(targetCol As Integer)
+    Dim oDoc As Object
+    Dim oSheet As Object
+    oDoc = ThisComponent
+    oSheet = oDoc.CurrentController.ActiveSheet
+    
+    Dim colLetter As String
+    colLetter = Chr(65 + targetCol)
+    
+    &apos; 1. Check if the target column is empty
+    Dim oTargetColRange As Object
+    Dim oEmptyCheck As Object
+    oTargetColRange = oSheet.Columns.getByIndex(targetCol)
+    On Error Resume Next
+    oEmptyCheck = oTargetColRange.queryContentCells(31)
+    On Error GoTo 0
+    
+    If Not IsNull(oEmptyCheck) Then
+        If oEmptyCheck.getCount() &gt; 0 Then
+            MsgBox &quot;Column &quot; &amp; colLetter &amp; &quot; is not empty. Please clear it before importing.&quot;, 48, &quot;Import Error&quot;
+            Exit Sub
+        End If
+    End If
+    
+    &apos; 2. Prompt for Language Code
+    Dim langCode As String
+    langCode = InputBox(&quot;Enter the language code for Column &quot; &amp; colLetter &amp; &quot;:&quot;, &quot;Language Code&quot;)
+    If Trim(langCode) = &quot;&quot; Then Exit Sub
+    
+    &apos; 3. Ask user to select a file
+    Dim oFilePicker As Object
+    oFilePicker = CreateUnoService(&quot;com.sun.star.ui.dialogs.FilePicker&quot;)
+    oFilePicker.initialize(Array(com.sun.star.ui.dialogs.TemplateDescription.FILEOPEN_SIMPLE))
+    oFilePicker.appendFilter(&quot;Supported Documents&quot;, &quot;*.ods;*.xls;*.xlsx;*.csv;*.txt;*.odt;*.docx;*.rtf;*.html;*.htm&quot;)
+    
+    If oFilePicker.execute() &lt;&gt; 1 Then Exit Sub
+    
+    Dim filePaths() As String
+    Dim fileUrl As String
+    filePaths = oFilePicker.getFiles()
+    fileUrl = filePaths(0)
+    
+    &apos; 4. Open the selected file in the background
+    Dim oDesktop As Object
+    Dim oSourceDoc As Object
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    
+    aProps(0).Name = &quot;Hidden&quot;
+    aProps(0).Value = True
+    aProps(1).Name = &quot;UpdateDocMode&quot;
+    aProps(1).Value = com.sun.star.document.UpdateDocMode.NO_UPDATE
+    &apos; The InteractionHandler forces LO to show the CSV Import dialog if a CSV is selected
+    aProps(2).Name = &quot;InteractionHandler&quot;
+    aProps(2).Value = CreateUnoService(&quot;com.sun.star.task.InteractionHandler&quot;)
+    
+    oDesktop = CreateUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+    
+    On Error GoTo ErrorHandler
+    oSourceDoc = oDesktop.loadComponentFromURL(fileUrl, &quot;_blank&quot;, 0, aProps)
+    On Error GoTo 0
+    
+    If IsNull(oSourceDoc) Then
+        MsgBox &quot;Could not read the selected file or import was cancelled.&quot;, 16, &quot;Error&quot;
+        Exit Sub
+    End If
+    
+    On Error GoTo CleanUp
+    oDoc.lockControllers()
+    
+    Dim importSuccess As Boolean
+    importSuccess = False
+    
+    &apos; 5. Branch based on the type of document opened
+    If oSourceDoc.supportsService(&quot;com.sun.star.sheet.SpreadsheetDocument&quot;) Then
+        &apos; --- SPREADSHEET &amp; CSV IMPORT LOGIC ---
+        Dim sheetNames() As String
+        sheetNames = oSourceDoc.Sheets.getElementNames()
+        
+        Dim sIdx As Integer
+        sIdx = GetSheetIndexFromUser(sheetNames)
+        If sIdx &lt; 0 Then GoTo CleanUp
+        
+        Dim srcColStr As String
+        srcColStr = InputBox(&quot;Enter column letter to import (e.g., A, B, C):&quot;, &quot;Select Column&quot;, &quot;A&quot;)
+        If Trim(srcColStr) = &quot;&quot; Then GoTo CleanUp
+        
+        Dim srcColIdx As Long
+        srcColIdx = ColIndexFromLetter(srcColStr)
+        If srcColIdx &lt; 0 Then
+            MsgBox &quot;Invalid column letter.&quot;, 16, &quot;Error&quot;
+            GoTo CleanUp
+        End If
+        
+        Dim oSourceSheet As Object
+        oSourceSheet = oSourceDoc.Sheets.getByIndex(sIdx)
+        
+        Dim oSrcCursor As Object
+        oSrcCursor = oSourceSheet.createCursor()
+        oSrcCursor.gotoEndOfUsedArea(False)
+        Dim lastRow As Long
+        lastRow = oSrcCursor.RangeAddress.EndRow
+        If lastRow &lt; 0 Then lastRow = 0
+        
+        Dim srcRange As Object
+        Dim srcData As Variant
+        srcRange = oSourceSheet.getCellRangeByPosition(srcColIdx, 0, srcColIdx, lastRow)
+        srcData = srcRange.getDataArray()
+        
+        oSheet.getCellByPosition(targetCol, 0).String = langCode
+        
+        Dim targetRange As Object
+        targetRange = oSheet.getCellRangeByPosition(targetCol, 1, targetCol, 1 + lastRow)
+        targetRange.setDataArray(srcData)
+        
+        importSuccess = True
+        
+    ElseIf oSourceDoc.supportsService(&quot;com.sun.star.text.TextDocument&quot;) Or oSourceDoc.supportsService(&quot;com.sun.star.text.WebDocument&quot;) Then
+        &apos; --- TEXT / HTML IMPORT LOGIC (Temp File Method) ---
+        Dim tempUrl As String
+        tempUrl = CreateUnoService(&quot;com.sun.star.util.PathSettings&quot;).Temp &amp; &quot;/lo_import_temp.txt&quot;
+        
+        Dim saveProps(1) As New com.sun.star.beans.PropertyValue
+        saveProps(0).Name = &quot;FilterName&quot;
+        saveProps(0).Value = &quot;Text (encoded)&quot;
+        saveProps(1).Name = &quot;FilterOptions&quot;
+        saveProps(1).Value = &quot;UTF8,LF&quot;
+        
+        &apos; Export the DOCX/HTML to a pure text file
+        oSourceDoc.storeToURL(tempUrl, saveProps)
+        oSourceDoc.close(True)
+        oSourceDoc = Nothing
+        
+        &apos; Read the pure text file line by line
+        Dim oSFA As Object, oInStream As Object, oTextStream As Object
+        oSFA = CreateUnoService(&quot;com.sun.star.ucb.SimpleFileAccess&quot;)
+        oInStream = oSFA.openFileRead(tempUrl)
+        oTextStream = CreateUnoService(&quot;com.sun.star.io.TextInputStream&quot;)
+        oTextStream.setInputStream(oInStream)
+        oTextStream.setEncoding(&quot;UTF-8&quot;)
+        
+        Dim linesList() As String
+        Dim pCount As Long
+        pCount = 0
+        
+        Do While Not oTextStream.isEOF()
+            ReDim Preserve linesList(pCount)
+            linesList(pCount) = oTextStream.readLine()
+            pCount = pCount + 1
+        Loop
+        
+        oTextStream.closeInput()
+        oSFA.kill(tempUrl) 
+        
+        If pCount &gt; 0 Then
+            Dim writeData() As Variant
+            ReDim writeData(pCount - 1)
+            Dim r As Long
+            
+            For r = 0 To pCount - 1
+                writeData(r) = Array(linesList(r))
+            Next r
+            
+            oSheet.getCellByPosition(targetCol, 0).String = langCode
+            
+            Dim txtTargetRange As Object
+            txtTargetRange = oSheet.getCellRangeByPosition(targetCol, 1, targetCol, pCount)
+            txtTargetRange.setDataArray(writeData)
+            
+            importSuccess = True
+        End If
+        
+    Else
+        MsgBox &quot;Unsupported file structure. Could not extract text.&quot;, 16, &quot;Import Error&quot;
+    End If
+
+CleanUp:
+    &apos; Apply formatting if data was successfully imported
+    If importSuccess Then
+        Dim oTargetColumnFormat As Object
+        oTargetColumnFormat = oSheet.Columns.getByIndex(targetCol)
+        
+        &apos; Set width to 4 cm (4000 hundredths of a millimeter)
+        oTargetColumnFormat.Width = 4000
+        
+        &apos; Force Text Wrapping
+        oTargetColumnFormat.IsTextWrapped = True
+        
+        &apos; Set Default Alignments
+        oTargetColumnFormat.HoriJustify = com.sun.star.table.CellHoriJustify.STANDARD
+        oTargetColumnFormat.VertJustify = com.sun.star.table.CellVertJustify.STANDARD
+    End If
+
+    On Error Resume Next
+    If Not IsNull(oSourceDoc) Then
+        oSourceDoc.close(True)
+    End If
+    oDoc.unlockControllers()
+    On Error GoTo 0
+    Exit Sub
+
+ErrorHandler:
+    MsgBox &quot;An error occurred while trying to import the file.&quot;, 16, &quot;Error&quot;
+    Resume CleanUp
+End Sub
+
+&apos; Helper function: Custom GUI Dialog for Dropdown Sheet Selection
+Function GetSheetIndexFromUser(sheetNames() As String) As Integer
+    Dim oDialogModel As Object
+    oDialogModel = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialogModel&quot;)
+    oDialogModel.PositionX = 100
+    oDialogModel.PositionY = 100
+    oDialogModel.Width = 150
+    oDialogModel.Height = 60
+    oDialogModel.Title = &quot;Select Sheet&quot;
+    
+    Dim oListBoxModel As Object
+    oListBoxModel = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlListBoxModel&quot;)
+    oListBoxModel.PositionX = 10
+    oListBoxModel.PositionY = 10
+    oListBoxModel.Width = 130
+    oListBoxModel.Height = 15
+    oListBoxModel.Dropdown = True
+    oListBoxModel.StringItemList = sheetNames
+    oDialogModel.insertByName(&quot;SheetListBox&quot;, oListBoxModel)
+    
+    Dim oButtonOk As Object
+    oButtonOk = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    oButtonOk.PositionX = 30
+    oButtonOk.PositionY = 35
+    oButtonOk.Width = 40
+    oButtonOk.Height = 15
+    oButtonOk.Label = &quot;OK&quot;
+    oButtonOk.PushButtonType = com.sun.star.awt.PushButtonType.OK
+    oDialogModel.insertByName(&quot;btnOk&quot;, oButtonOk)
+    
+    Dim oButtonCancel As Object
+    oButtonCancel = oDialogModel.createInstance(&quot;com.sun.star.awt.UnoControlButtonModel&quot;)
+    oButtonCancel.PositionX = 80
+    oButtonCancel.PositionY = 35
+    oButtonCancel.Width = 40
+    oButtonCancel.Height = 15
+    oButtonCancel.Label = &quot;Cancel&quot;
+    oButtonCancel.PushButtonType = com.sun.star.awt.PushButtonType.CANCEL
+    oDialogModel.insertByName(&quot;btnCancel&quot;, oButtonCancel)
+    
+    Dim oDialog As Object
+    oDialog = CreateUnoService(&quot;com.sun.star.awt.UnoControlDialog&quot;)
+    oDialog.setModel(oDialogModel)
+    
+    Dim oToolkit As Object
+    oToolkit = CreateUnoService(&quot;com.sun.star.awt.Toolkit&quot;)
+    oDialog.createPeer(oToolkit, Null)
+    
+    Dim oListBox As Object
+    oListBox = oDialog.getControl(&quot;SheetListBox&quot;)
+    oListBox.selectItemPos(0, True)
+    
+    GetSheetIndexFromUser = -1
+    If oDialog.execute() = 1 Then
+        GetSheetIndexFromUser = oListBox.getSelectedItemPos()
+    End If
+    oDialog.dispose()
+End Function
+
+&apos; Helper function: Converts Excel column letters (A, B, AA) to numbers (0, 1, 26)
+Function ColIndexFromLetter(ByVal letter As String) As Long
+    letter = UCase(Trim(letter))
+    Dim idx As Long, charVal As Integer
+    Dim i As Integer
+    idx = 0
+    For i = 1 To Len(letter)
+        charVal = Asc(Mid(letter, i, 1)) - 64
+        If charVal &lt; 1 Or charVal &gt; 26 Then
+            ColIndexFromLetter = -1
+            Exit Function
+        End If
+        idx = idx * 26 + charVal
+    Next i
+    ColIndexFromLetter = idx - 1
+End Function
+</script:module>

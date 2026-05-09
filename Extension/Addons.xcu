@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<oor:component-data xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" oor:name="Addons" oor:package="org.openoffice.Office">
+  <node oor:name="AddonUI">
+    <node oor:name="OfficeToolBar">
+      <node oor:name="Aligner.OfficeToolBar" oor:op="replace">
+        <prop oor:name="Title" oor:type="xs:string">
+          <value/>
+          <value xml:lang="en-US">Aligner</value>
+        </prop>
+        
+        <node oor:name="m1" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.AlignAndAnchorSegments?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Align and Anchor Segments</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m2" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ApplyAnchorColor?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Apply Anchor Color</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m3" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>private:separator</value></prop>
+        </node>
+        <node oor:name="m4" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MergeWithCellBelow?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Merge with Segment Below</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m5" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.SplitCellAtDelimiter?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Split at Delimiter</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m6" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentDown?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Move Segment Down</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m7" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentUp?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Move Segment Up</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m8" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.RemoveBilateralRows?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Remove Current Row</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m9" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>private:separator</value></prop>
+        </node>
+        <node oor:name="m10" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ImportLeft?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Import to Left Column</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m11" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ImportRight?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Import to Right Column</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m12" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.HighlightRegexMatches?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Highlight RegEx Matches</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m13" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.SetCustomRegex?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">RegEx for Highlighting</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m14" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.CleanSheetFormatting?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Reset Formatting</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m15" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>private:separator</value></prop>
+        </node>
+        <node oor:name="m16" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ExportToTMX?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Export To TMX</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+        <node oor:name="m17" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ConfigureColors?language=Basic&amp;location=application</value></prop>
+          <prop oor:name="Title" oor:type="xs:string"><value xml:lang="en-US">Set Colors</value></prop>
+          <prop oor:name="Target" oor:type="xs:string"><value>_self</value></prop>
+          <prop oor:name="Context" oor:type="xs:string"><value>com.sun.star.sheet.SpreadsheetDocument</value></prop>
+        </node>
+      </node>
+    </node>
+    <node oor:name="Images">
+      
+        <node oor:name="img_1" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.AlignAndAnchorSegments?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/AlignAndAnchorSegments.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/AlignAndAnchorSegments.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_2" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ApplyAnchorColor?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/ApplyAnchorColor.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/ApplyAnchorColor.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_4" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MergeWithCellBelow?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/MergeWithCellBelow.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/MergeWithCellBelow.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_5" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.SplitCellAtDelimiter?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/SplitCellAtDelimiter.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/SplitCellAtDelimiter.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_6" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentDown?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/MoveSegmentDown.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/MoveSegmentDown.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_7" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.MoveSegmentUp?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/MoveSegmentUp.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/MoveSegmentUp.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_8" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.RemoveBilateralRows?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/RemoveBilateralRows.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/RemoveBilateralRows.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_10" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ImportLeft?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/ImportLeft.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/ImportLeft.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_11" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ImportRight?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/ImportRight.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/ImportRight.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_12" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.HighlightRegexMatches?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/HighlightRegexMatches.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/HighlightRegexMatches.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_13" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.SetCustomRegex?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/SetCustomRegex.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/SetCustomRegex.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_14" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.CleanSheetFormatting?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/CleanSheetFormatting.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/CleanSheetFormatting.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_16" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ExportToTMX?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/ExportToTMX.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/ExportToTMX.png</value></prop>
+          </node>
+        </node>
+        <node oor:name="img_17" oor:op="replace">
+          <prop oor:name="URL" oor:type="xs:string"><value>vnd.sun.star.script:Aligner.AlignerMacros.ConfigureColors?language=Basic&amp;location=application</value></prop>
+          <node oor:name="UserDefinedImages">
+            <prop oor:name="ImageSmallURL" oor:type="xs:string"><value>%origin%/icons/ConfigureColors.png</value></prop>
+            <prop oor:name="ImageBigURL" oor:type="xs:string"><value>%origin%/icons/ConfigureColors.png</value></prop>
+          </node>
+        </node>
+    </node>
+  </node>
+</oor:component-data>
