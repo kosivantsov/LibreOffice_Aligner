@@ -3,6 +3,6 @@
   <identifier value="Aligner_cApStAn.addon"/>
   <version value="1.0.0"/>
   <update-download>
-    <src xlink:href="https://github.com/kosivantsov/LibreOffice_Aligner/releases/latest/download/LibreOffice_Aligner.oxt"/>
+    <src xlink:href="https://github.com/kosivantsov/LibreOffice_Aligner/releases/latest/download/Aligner.oxt"/>
   </update-download>
 </description>
