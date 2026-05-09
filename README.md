@@ -10,6 +10,8 @@ A bilingual text aligner extension for LibreOffice Calc, designed to import docu
 * **Regex Highlighting:** Configurable regular expression matcher to highlight specific text strings, aiding visual alignment.
 * **Visual Anchoring:** Light-green color coding establishes anchored rows to keep perfectly aligned segments locked in place.
 * **Standardized Export:** Generates valid `.tmx` files with user-defined `segtype` attributes.
+  <img height="500" alt="image" src="https://github.com/user-attachments/assets/46b18ea1-0544-4c01-9e67-6a611b15e465" />
+
 
 ## Installation
 
