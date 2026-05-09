@@ -64,7 +64,7 @@ When your alignment is complete, use the export button to generate your translat
 
 ## Acknowledgments
 
-* This extension was developed as part of the ongoing language technology initiatives at [cApStAn LQC](https://www.capstan.be/). <br>
+* This extension was developed as part of the ongoing language technology initiatives at [cApStAn](https://www.capstan.be/). <br>
   <img height="100" alt="cApStAn LQC" src="https://github.com/user-attachments/assets/1b10e75d-351b-42c6-a132-4a3465b2793f" />
 
 * The icons used in the toolbar are part of the [Oxygen icon theme](https://github.com/KDE/oxygen-icons) for LibreOffice.
