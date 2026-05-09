@@ -60,7 +60,10 @@ When your alignment is complete, use the export button to generate your translat
 * **Document Segmentation:** Text documents are imported paragraph-by-paragraph. Sentence-level segmentation must be done manually or pre-processed prior to import.
 * **Language Validation:** The TMX exporter checks for the existence of language headers but does not strictly validate ISO language codes.
 
+## Acknowledgments
+
 * This extension was developed as part of the ongoing language technology initiatives at [cApStAn LQC](https://www.capstan.be/). <br>
-  <img src="capstan-logo.svg" height="24" alt="cApStAn LQC">
+  <img height="100" alt="cApStAn LQC" src="https://github.com/user-attachments/assets/1b10e75d-351b-42c6-a132-4a3465b2793f" />
+
 * The icons used in the toolbar are part of the [Oxygen icon theme](https://github.com/KDE/oxygen-icons) for LibreOffice.
 * The main icon for the extension is based on the Compare File Icon from [UXWing](https://uxwing.com).
