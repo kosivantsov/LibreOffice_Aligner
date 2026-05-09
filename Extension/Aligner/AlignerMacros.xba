@@ -1662,8 +1662,8 @@ CleanUp:
         Dim oTargetColumnFormat As Object
         oTargetColumnFormat = oSheet.Columns.getByIndex(targetCol)
         
-        &apos; Set width to 4 cm (4000 hundredths of a millimeter)
-        oTargetColumnFormat.Width = 4000
+        &apos; Set width to 10 cm (10000 hundredths of a millimeter)
+        oTargetColumnFormat.Width = 10000
         
         &apos; Force Text Wrapping
         oTargetColumnFormat.IsTextWrapped = True
